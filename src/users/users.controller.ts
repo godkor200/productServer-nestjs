@@ -3,19 +3,29 @@ import {
   Get,
   Post,
   Body,
+  Res,
   Patch,
   Param,
   Delete,
+  HttpStatus,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UsersService } from '@users/users.service';
+import { CreateUserDto } from '@users/dto/create-user.dto';
+import { UpdateUserDto } from '@users/dto/update-user.dto';
+import { ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { User } from '@schema/user.schema';
 
-@Controller('users')
+@ApiTags('관리자 API')
+@Controller('v1/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @ApiOperation({ summary: '관리자 생성 API', description: '유저 생성' })
+  @ApiCreatedResponse({
+    description: '관리자를 생성한다.',
+    type: User,
+  })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
