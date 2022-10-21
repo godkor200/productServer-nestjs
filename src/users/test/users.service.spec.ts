@@ -1,46 +1,134 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersService } from '../users.service';
-import mongoose, { Model } from 'mongoose';
-import { UserDocument, UserSchema } from '@schema/user.schema';
-import { CreateUserDto } from '@users/dto/create-user.dto';
+import { UsersRepository } from '@users/users.repository';
+import { FilterQuery } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
+import { User } from '@schema/user.schema';
+import { UserModel } from '@users/test/helper/user.model';
+import { userStub } from '@users/test/stubs/user.stub';
 
-const USER_MODEL = mongoose.model('User', UserSchema);
-const mockRepository = {
-  find() {
-    return {};
-  },
-};
 describe('UsersService', () => {
-  let userService: UsersService;
-  let userModel: Model<UserDocument>;
+  let usersRepository: UsersRepository;
+  describe('find operations', () => {
+    let userModel: UserModel;
+    let userFilterQuery: FilterQuery<User>;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService],
-    }).compile();
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          UsersRepository,
+          { provide: getModelToken(User.name), useClass: UserModel },
+        ],
+      }).compile();
 
-    userService = module.get<UsersService>(UsersService);
-    userModel = module.get<Model<UserDocument>>(USER_MODEL);
+      usersRepository = module.get<UsersRepository>(UsersRepository);
+      userModel = module.get<UserModel>(getModelToken(User.name));
+
+      userFilterQuery = { id: userStub()._id };
+
+      jest.clearAllMocks();
+    });
+
+    describe('findOne', () => {
+      describe('when findOne is called', () => {
+        let user: User;
+
+        beforeEach(async () => {
+          jest.spyOn(userModel, 'findOne');
+          user = await usersRepository.findOne(userFilterQuery);
+        });
+
+        test('then it should call the userModel', () => {
+          expect(userModel.findOne).toHaveBeenCalledWith(userFilterQuery, {
+            _id: 0,
+            __v: 0,
+          });
+        });
+
+        test('then it should return a user', () => {
+          expect(user).toEqual(userStub());
+        });
+      });
+    });
+    describe('find', () => {
+      describe('when find is called', () => {
+        let users: User[];
+
+        beforeEach(async () => {
+          jest.spyOn(userModel, 'find');
+          users = await usersRepository.find(userFilterQuery);
+        });
+
+        test('then it should call the userModel', () => {
+          expect(userModel.find).toHaveBeenCalledWith(userFilterQuery);
+        });
+
+        test('then it should return a user', () => {
+          expect(users).toEqual([userStub()]);
+        });
+      });
+    });
+    describe('findOneAndUpdate', () => {
+      describe('when findOneAndUpdate is called', () => {
+        let user: User;
+
+        beforeEach(async () => {
+          jest.spyOn(userModel, 'findOneAndUpdate');
+          user = await usersRepository.findOneAndUpdate(
+            userFilterQuery,
+            userStub(),
+          );
+        });
+
+        test('then it should call the userModel', () => {
+          expect(userModel.findOneAndUpdate).toHaveBeenCalledWith(
+            userFilterQuery,
+            userStub(),
+            { new: true },
+          );
+        });
+
+        test('then it should return a user', () => {
+          expect(user).toEqual(userStub());
+        });
+      });
+    });
   });
 
-  describe('UsersService', () => {
-    describe('관리자 생성', () => {
-      it('파라미터가 누락됐을 경우 오류를 발생시킨다.', async () => {
-        const userDto: CreateUserDto = {
-          userName: '유병국',
-          userId: undefined,
-          userClass: undefined,
-          userPwd: '1234',
-        };
-        // const userCreateSpy = jest
-        //   .spyOn(userModel, 'create')
-        //   .mockResolvedValue(undefined);
-        try {
-          await userService.create(userDto);
-        } catch (error) {
-          console.log(error);
-        }
+  describe('create operations', () => {
+    beforeEach(async () => {
+      const moduleRef = await Test.createTestingModule({
+        providers: [
+          UsersRepository,
+          {
+            provide: getModelToken(User.name),
+            useValue: UserModel,
+          },
+        ],
+      }).compile();
+
+      usersRepository = moduleRef.get<UsersRepository>(UsersRepository);
+    });
+
+    describe('create', () => {
+      describe('when create is called', () => {
+        let user: User;
+        let saveSpy: jest.SpyInstance;
+        let constructorSpy: jest.SpyInstance;
+
+        beforeEach(async () => {
+          saveSpy = jest.spyOn(UserModel.prototype, 'save');
+          constructorSpy = jest.spyOn(UserModel.prototype, 'constructorSpy');
+          user = await usersRepository.create(userStub());
+        });
+
+        test('then it should call the userModel', () => {
+          expect(saveSpy).toHaveBeenCalled();
+          expect(constructorSpy).toHaveBeenCalledWith(userStub());
+        });
+
+        test('then it should return a user', () => {
+          expect(user).toEqual(userStub());
+        });
       });
     });
   });
