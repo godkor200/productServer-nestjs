@@ -1,4 +1,5 @@
 {
+  "extends": "./tsconfig.paths.json",
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,
@@ -16,13 +17,8 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "moduleResolution": "node",
-    "baseUrl": "src",
-    "paths": {
-      "@root": ["*"],
-      "@users/*": ["users/*"],
-      "@utils/*": ["utils/*"],
-      "@schema/*": ["schema/*"]
-    }
-  }
+    "moduleResolution": "node"
+  },
+  "exclude": ["node_modules"],
+  "include": ["src/**/*.ts", ".env", "src/__test__", "src/__test__/**/**.ts"]
 }
